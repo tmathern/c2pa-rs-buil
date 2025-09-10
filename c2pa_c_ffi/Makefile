@@ -157,7 +157,7 @@ release-android-arm64:
 		fi; \
 		export ANDROID_NDK_HOME=$$NDK_DIR; \
 	fi; \
-	cargo ndk --target aarch64-linux-android --android-platform 21 build $(CARGO_BUILD_FLAGS)
+	cargo ndk --target aarch64-linux-android --platform 21 build $(CARGO_BUILD_FLAGS)
 	@$(call make_zip,$(TARGET_DIR)/aarch64-linux-android/release,aarch64-linux-android)
 
 # 32-bit Android devices
