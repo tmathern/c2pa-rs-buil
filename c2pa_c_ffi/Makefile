@@ -37,11 +37,13 @@ define make_zip
 	fi; \
 	mkdir -p $(TARGET_DIR)/artifacts $(1)/include $(1)/lib; \
 	cp $(1)/c2pa.h $(1)/include/; \
-	if echo "$(2)" | grep -q "ios"; then \
+	case "$(2)" in *ios*) \
 		cp $(1)/libc2pa_c.a $(1)/lib/; \
-	else \
+		;; \
+	*) \
 		find $(1) -name "libc2pa_c.*" ! -name "*.a" ! -path "*/deps/*" -exec cp {} $(1)/lib/ \;; \
-	fi; \
+		;; \
+	esac; \
 	(cd $(1) && zip -9 -r ../../artifacts/c2pa-v$${VERSION}-$(2).zip include lib); \
 	echo "Zip file created: $(TARGET_DIR)/artifacts/c2pa-v$${VERSION}-$(2).zip"
 endef
@@ -140,10 +142,8 @@ release-ios-arm64-sim:
 	cargo build --target=aarch64-apple-ios-sim $(CARGO_BUILD_FLAGS)
 	@$(call make_zip,$(TARGET_DIR)/aarch64-apple-ios-sim/release,aarch64-apple-ios-sim)
 
-# 64-bit Android devices
-release-android-arm64:
-	rustup target add aarch64-linux-android
-	cargo install cargo-ndk
+# Install Android NDK
+install-android-ndk:
 	@if [ -z "$$ANDROID_NDK_HOME" ]; then \
 		echo "Installing Android NDK..."; \
 		NDK_VERSION=25.1.8937393; \
@@ -156,26 +156,37 @@ release-android-arm64:
 			rm /tmp/android-ndk.zip; \
 		fi; \
 		export ANDROID_NDK_HOME=$$NDK_DIR; \
-	fi; \
+		echo "Android NDK installed at $$NDK_DIR"; \
+	else \
+		echo "Android NDK already installed at $$ANDROID_NDK_HOME"; \
+	fi
+
+# 64-bit Android devices
+release-android-arm64: install-android-ndk
+	rustup target add aarch64-linux-android
+	cargo install cargo-ndk
 	cargo ndk --target aarch64-linux-android --platform 21 build $(CARGO_BUILD_FLAGS)
 	@$(call make_zip,$(TARGET_DIR)/aarch64-linux-android/release,aarch64-linux-android)
 
 # 32-bit Android devices
-release-android-armv7:
-	$(CROSS_INSTALL_RUSTFLAGS) cargo install cross --git https://github.com/cross-rs/cross
-	cross build --target=armv7-linux-androideabi $(CARGO_BUILD_FLAGS)
+release-android-armv7: install-android-ndk
+	rustup target add armv7-linux-androideabi
+	cargo install cargo-ndk
+	cargo ndk --target armv7-linux-androideabi --platform 21 build $(CARGO_BUILD_FLAGS)
 	@$(call make_zip,$(TARGET_DIR)/armv7-linux-androideabi/release,armv7-linux-androideabi)
 
 # 32-bit x86 Android emulators
-release-android-x86:
-	$(CROSS_INSTALL_RUSTFLAGS) cargo install cross --git https://github.com/cross-rs/cross
-	cross build --target=i686-linux-android $(CARGO_BUILD_FLAGS)
+release-android-x86: install-android-ndk
+	rustup target add i686-linux-android
+	cargo install cargo-ndk
+	cargo ndk --target i686-linux-android --platform 21 build $(CARGO_BUILD_FLAGS)
 	@$(call make_zip,$(TARGET_DIR)/i686-linux-android/release,i686-linux-android)
 
 # 64-bit x86 Android emulators
-release-android-x86_64:
-	$(CROSS_INSTALL_RUSTFLAGS) cargo install cross --git https://github.com/cross-rs/cross
-	cross build --target=x86_64-linux-android $(CARGO_BUILD_FLAGS)
+release-android-x86_64: install-android-ndk
+	rustup target add x86_64-linux-android
+	cargo install cargo-ndk
+	cargo ndk --target x86_64-linux-android --platform 21 build $(CARGO_BUILD_FLAGS)
 	@$(call make_zip,$(TARGET_DIR)/x86_64-linux-android/release,x86_64-linux-android)
 
 
