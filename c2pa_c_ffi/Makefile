@@ -142,8 +142,22 @@ release-ios-arm64-sim:
 
 # 64-bit Android devices
 release-android-arm64:
-	$(CROSS_INSTALL_RUSTFLAGS) cargo install cross --git https://github.com/cross-rs/cross
-	cross build --target=aarch64-linux-android $(CARGO_BUILD_FLAGS)
+	rustup target add aarch64-linux-android
+	cargo install cargo-ndk
+	@if [ -z "$$ANDROID_NDK_HOME" ]; then \
+		echo "Installing Android NDK..."; \
+		NDK_VERSION=25.1.8937393; \
+		NDK_DIR=$$HOME/android-ndk-$$NDK_VERSION; \
+		if [ ! -d "$$NDK_DIR" ]; then \
+			NDK_URL="https://dl.google.com/android/repository/android-ndk-r25c-linux.zip"; \
+			echo "Downloading Android NDK from $$NDK_URL"; \
+			curl -L $$NDK_URL -o /tmp/android-ndk.zip; \
+			unzip -q /tmp/android-ndk.zip -d $$HOME; \
+			rm /tmp/android-ndk.zip; \
+		fi; \
+		export ANDROID_NDK_HOME=$$NDK_DIR; \
+	fi; \
+	cargo ndk --target aarch64-linux-android --android-platform 21 build $(CARGO_BUILD_FLAGS)
 	@$(call make_zip,$(TARGET_DIR)/aarch64-linux-android/release,aarch64-linux-android)
 
 # 32-bit Android devices
